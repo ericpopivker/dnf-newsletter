@@ -1,4 +1,18 @@
-﻿//from https://docs.microsoft.com/en-us/dotnet/machine-learning/tutorials/movie-recommendation#create-a-console-application
+﻿// Read about this and other fiddles on .NET Fiddle Newsletter https://dotnetfiddle.substack.com/
+//
+// This fiddle demonstrates how to use ML technique matrix factorization, to predict what other movies you will like based on your ratings.
+//
+// Before running the program please specify your movie preferences by entering ratings for up to 50 movies in CurrentUserMovieRating dicitonary on top
+// Use scale 0.5 - 5. For movies you didn't see enter NULL.
+//
+// This program consists of 5 steps
+//
+// 1. Load Movies - loads 500 movies from CSV file stored on azure.  The movies were picked from 25M MovielLens DataSet from https://grouplens.org/datasets/movielens.
+// 2. Load Training and Test data - loads 260K+ ratings from CSV File.   The ratings also come from 25M MovielLens DataSet. All ratings are split into test and training data using TraingTestDataSplitFraction. 
+//    By default 80% of data is used for training and 20% of data is uses for testing.
+// 3. Train model. Run training 30 times trying to improve the model to give better predications.
+// 4. Evaluate model with test data, to see how well is prediction model working.
+// 5. Make predictions on  based on ratings you provided in CurrentUserMovieRatings and show you the top recommended movies and the bottom movies that you probably wouldn't like.
 
 using System;
 using System.Net;
@@ -18,69 +32,68 @@ namespace DnfNewsletter.No4.WarGames.Console_
 	public class Program
 	{
 		const int CurrentUserId = 1000001;
-		const int NumRecommendations = 20;	//There are total of 500 movies so you
+		const int NumRecommendations = 20;  //There are total of 500 movies so you can change this up to 250
 		const double TraingTestDataSplitFraction = 0.2; //20% of data is used for testing and 80% for training
-		const int TraingTestDataSplitRandomSeed = 42; 
+		const int TraingTestDataSplitRandomSeed = 42;
 
 		private static List<Movie> _movies;
-		private static Dictionary<int, Movie> _moviesIdToMovie;
 		private static Dictionary<string, Movie> _moviesTitleToMovie;
 
 		//Your movie ratings
 		static Dictionary<string, double?> CurrentUserMovieRatings
-				= new Dictionary<string, double?>()
+			= new Dictionary<string, double?>()
 		{
-			//add your rating for any movie you saw.  Scale 0.5 - 5.
-			{"Deadpool (2016)",                                5},
-			{"Arrival (2016)",                                 null},
-			{"Doctor Strange (2016)",                          null},
-			{"Guardians of the Galaxy 2 (2017)",               3.5},
-			{"Logan (2017)",                                   3},
-			{"Rogue One: A Star Wars Story (2016)",            null},
-			{"Captain America: Civil War (2016)",              null},
-			{"Thor: Ragnarok (2017)",                          null},
-			{"Avengers: Infinity War - Part I (2018)",         null},
-			{"Get Out (2017)",                                 5},
-			{"Wonder Woman (2017)",                            null},
-			{"Blade Runner 2049 (2017)",                       null},
-			{"Baby Driver (2017)",                             2},
-			{"Spider-Man: Homecoming (2017)",                  null},
-			{"Black Panther (2017)",                           3.5},
-			{"Dunkirk (2017)",                                 null},
-			{"Fantastic Beasts and Where to Find Them (2016)", null},
-			{"Deadpool 2 (2018)",                              null},
-			{"Star Wars: The Last Jedi (2017)",                null},
-			{"Three Billboards Outside Ebbing, Missouri (2017)", null},
-			{"La La Land (2016)",                              4},
-			{"Suicide Squad (2016)",                           1},
-			{"The Nice Guys (2016)",                           4.5},
-			{"10 Cloverfield Lane (2016)",                     4},
-			{"John Wick: Chapter Two (2017)",                  3},
-			{"Passengers (2016)",                              null},
-			{"Split (2017)",                                   null},
-			{"X-Men: Apocalypse (2016)",                       null},
-			{"Star Trek Beyond (2016)",                        null},
-			{"Batman v Superman: Dawn of Justice (2016)",      2},
-			{"A Quiet Place (2018)",                           null},
-			{"The Shape of Water (2017)",                      2},
-			{"Avengers: Infinity War - Part II (2019)",        null},
-			{"Hacksaw Ridge (2016)",                           null},
-			{"It (2017)",                                      3},
-			{"Annihilation (2018)",                            null},
-			{"The Accountant (2016)",                          null},
-			{"Hidden Figures (2016)",                          null},
-			{"Now You See Me 2 (2016)",                        null},
-			{"Ant-Man and the Wasp (2018)",                    null},
-			{"Hell or High Water (2016)",                      null},
-			{"Lady Bird (2017)",                               null},
-			{"Kingsman: The Golden Circle (2017)",             3.5},
-			{"Jumanji: Welcome to the Jungle (2017)",          null},
-			{"The Jungle Book (2016)",                         null},
-			{"Bohemian Rhapsody (2018)",                       null},
-			{"Ghost in the Shell (2017)",                      null},
-			{"Manchester by the Sea (2016)",                   null},
-			{"Solo: A Star Wars Story (2018)",                 null},
-			{"Mission: Impossible - Fallout (2018)",           4},
+		//Add your rating for any movie you saw.  Scale 0.5 - 5.  Null means you haven't seen the movie.
+		{"Deadpool (2016)",                                5},
+		{"Arrival (2016)",                                 null},
+		{"Doctor Strange (2016)",                          null},
+		{"Guardians of the Galaxy 2 (2017)",               3.5},
+		{"Logan (2017)",                                   3},
+		{"Rogue One: A Star Wars Story (2016)",            null},
+		{"Captain America: Civil War (2016)",              null},
+		{"Thor: Ragnarok (2017)",                          null},
+		{"Avengers: Infinity War - Part I (2018)",         null},
+		{"Get Out (2017)",                                 5},
+		{"Wonder Woman (2017)",                            null},
+		{"Blade Runner 2049 (2017)",                       null},
+		{"Baby Driver (2017)",                             2},
+		{"Spider-Man: Homecoming (2017)",                  null},
+		{"Black Panther (2017)",                           3.5},
+		{"Dunkirk (2017)",                                 null},
+		{"Fantastic Beasts and Where to Find Them (2016)", null},
+		{"Deadpool 2 (2018)",                              null},
+		{"Star Wars: The Last Jedi (2017)",                null},
+		{"Three Billboards Outside Ebbing, Missouri (2017)", null},
+		{"La La Land (2016)",                              4},
+		{"Suicide Squad (2016)",                           1},
+		{"The Nice Guys (2016)",                           4.5},
+		{"10 Cloverfield Lane (2016)",                     4},
+		{"John Wick: Chapter Two (2017)",                  3},
+		{"Passengers (2016)",                              null},
+		{"Split (2017)",                                   null},
+		{"X-Men: Apocalypse (2016)",                       null},
+		{"Star Trek Beyond (2016)",                        null},
+		{"Batman v Superman: Dawn of Justice (2016)",      2},
+		{"A Quiet Place (2018)",                           null},
+		{"The Shape of Water (2017)",                      2},
+		{"Avengers: Infinity War - Part II (2019)",        null},
+		{"Hacksaw Ridge (2016)",                           null},
+		{"It (2017)",                                      3},
+		{"Annihilation (2018)",                            null},
+		{"The Accountant (2016)",                          null},
+		{"Hidden Figures (2016)",                          null},
+		{"Now You See Me 2 (2016)",                        null},
+		{"Ant-Man and the Wasp (2018)",                    3},
+		{"Hell or High Water (2016)",                      null},
+		{"Lady Bird (2017)",                               null},
+		{"Kingsman: The Golden Circle (2017)",             3.5},
+		{"Jumanji: Welcome to the Jungle (2017)",          null},
+		{"The Jungle Book (2016)",                         null},
+		{"Bohemian Rhapsody (2018)",                       null},
+		{"Ghost in the Shell (2017)",                      null},
+		{"Manchester by the Sea (2016)",                   null},
+		{"Solo: A Star Wars Story (2018)",                 null},
+		{"Mission: Impossible - Fallout (2018)",           3.5},
 		};
 
 		public static void Main()
@@ -97,8 +110,7 @@ namespace DnfNewsletter.No4.WarGames.Console_
 
 			Console.WriteLine("\nLoad training and test data");
 			Console.WriteLine("=========================================\n");
-			//(IDataView trainDataView, IDataView testDataView) = LoadData1(mlContext);
-			(IDataView trainDataView, IDataView testDataView) = LoadData2(mlContext);
+			(IDataView trainDataView, IDataView testDataView) = LoadData1(mlContext);
 
 
 			Console.WriteLine("\nTrain the model using training data set");
@@ -119,42 +131,9 @@ namespace DnfNewsletter.No4.WarGames.Console_
 
 		public static (IDataView trainDataView, IDataView testDataView) LoadData1(MLContext mlContext)
 		{
-			var trainingDataCsvUrl = "https://raw.githubusercontent.com/dotnet/machinelearning-samples/master/samples/csharp/getting-started/MatrixFactorization_MovieRecommendation/Data/recommendation-ratings-train.csv";
-			var testDataCsvUrl = "https://raw.githubusercontent.com/dotnet/machinelearning-samples/master/samples/csharp/getting-started/MatrixFactorization_MovieRecommendation/Data/recommendation-ratings-test.csv";
-
-			//I added the LoadListFromCsv to load data from CSV. For local files mlContext.Data already has method LoadFromTextFile
-			//For other ways to load data see: https://docs.microsoft.com/en-us/dotnet/machine-learning/how-to-guides/load-data-ml-net
-			var trainingDataList = LoadListFromUrlCsv<MovieRating>(trainingDataCsvUrl);
-			Console.WriteLine($"TrainingData size : {trainingDataList.Count}");
-
-			//Data in ML.NET is represented as an IDataView class. IDataView is a flexible, efficient way of describing tabular data (numeric and text). 
-			IDataView trainDataView = mlContext.Data.LoadFromEnumerable<MovieRating>(trainingDataList);
-
-			var testDataList = LoadListFromUrlCsv<MovieRating>(testDataCsvUrl);
-			Console.WriteLine($"TestData size : {testDataList.Count}");
-			IDataView testDataView = mlContext.Data.LoadFromEnumerable<MovieRating>(testDataList);
-
-			return (trainDataView, testDataView);
-		}
-
-
-		public static void LoadMovies()
-		{
-			var moviesCsvFilePath = @"D:\Temp\DnfNewsletter\WarGames\movies.csv";
-
-			var moviesList = LoadListFromFileCsv<Movie>(moviesCsvFilePath);
-			Console.WriteLine($"MoviesList size : {moviesList.Count}");
-
-			_movies = moviesList;
-			_moviesIdToMovie = moviesList.ToDictionary(ml => ml.Id, ml => ml);
-			_moviesTitleToMovie = moviesList.ToDictionary(ml => ml.Title, ml => ml);
-		}
-
-		public static (IDataView trainDataView, IDataView testDataView) LoadData2(MLContext mlContext)
-		{
-			var ratingsCsvFilePath = @"D:\Temp\DnfNewsletter\WarGames\ratings.csv";
-			var ratingsDataList = LoadListFromFileCsv<MovieRating>(ratingsCsvFilePath);
-			Console.WriteLine($"ratingsDataList size : {ratingsDataList.Count}");
+			var ratingsCsvFileUrl = @"https://dnfnewsletter.blob.core.windows.net/files/WarGames/Ratings.csv";
+			var ratingsDataList = LoadListFromUrlCsv<MovieRating>(ratingsCsvFileUrl);
+			Console.WriteLine($"RatingsList size : {ratingsDataList.Count}\n");
 
 			var currentUserMovieRatings = GetCurrentUserMovieRatings();
 			ratingsDataList.AddRange(currentUserMovieRatings);
@@ -162,9 +141,9 @@ namespace DnfNewsletter.No4.WarGames.Console_
 			IDataView ratingsDataView = mlContext.Data.LoadFromEnumerable<MovieRating>(ratingsDataList);
 
 			//split data
-			DataOperationsCatalog.TrainTestData dataSplit = mlContext.Data.TrainTestSplit(ratingsDataView, 
-												testFraction: TraingTestDataSplitFraction, 
-												seed: TraingTestDataSplitRandomSeed);
+			DataOperationsCatalog.TrainTestData dataSplit = mlContext.Data.TrainTestSplit(ratingsDataView,
+																						  testFraction: TraingTestDataSplitFraction,
+																						  seed: TraingTestDataSplitRandomSeed);
 			IDataView trainDataView = dataSplit.TrainSet;
 			IDataView testDataView = dataSplit.TestSet;
 
@@ -172,7 +151,19 @@ namespace DnfNewsletter.No4.WarGames.Console_
 		}
 
 
-		
+		public static void LoadMovies()
+		{
+			var moviesCsvFileUrl = @"https://dnfnewsletter.blob.core.windows.net/files/WarGames/Movies.csv";
+
+			var moviesList = LoadListFromUrlCsv<Movie>(moviesCsvFileUrl);
+			Console.WriteLine($"MoviesList size : {moviesList.Count}\n");
+
+			_movies = moviesList;
+			_moviesTitleToMovie = moviesList.ToDictionary(ml => ml.Title, ml => ml);
+		}
+
+
+
 		public static List<MovieRating> GetCurrentUserMovieRatings()
 		{
 			var ratings = new List<MovieRating>();
@@ -206,13 +197,13 @@ namespace DnfNewsletter.No4.WarGames.Console_
 			// Since userId and movieId represent users and movie titles, not real values,
 			// you use the MapValueToKey() method to transform each userId and each movieId into a numeric key type Feature column (a format accepted by recommendation algorithms) and add them as new dataset columns:
 			IEstimator<ITransformer> estimator = mlContext.Transforms.Conversion.MapValueToKey(outputColumnName: "UserIdEncoded", inputColumnName: "UserId")
-																				.Append(mlContext.Transforms.Conversion.MapValueToKey(outputColumnName: "MovieIdEncoded", inputColumnName: "MovieId"));
+				.Append(mlContext.Transforms.Conversion.MapValueToKey(outputColumnName: "MovieIdEncoded", inputColumnName: "MovieId"));
 			var options = new MatrixFactorizationTrainer.Options
 			{
 				MatrixColumnIndexColumnName = "UserIdEncoded",
 				MatrixRowIndexColumnName = "MovieIdEncoded",
-				LabelColumnName = "Rating",  
-				NumberOfIterations = 50,   //original value was 20
+				LabelColumnName = "Rating",
+				NumberOfIterations = 30,   //original value was 20
 				ApproximationRank = 100
 			};
 
@@ -220,7 +211,7 @@ namespace DnfNewsletter.No4.WarGames.Console_
 			var trainerEstimator = estimator.Append(mlContext.Recommendation().Trainers.MatrixFactorization(options));
 			ITransformer model = trainerEstimator.Fit(trainingDataView);
 
-			Console.WriteLine("\nINFO: In this output, there are 50 iterations. In each iteration, the measure of error decreases and converges closer and closer to 0.");
+			Console.WriteLine("\nIn this output, there are 30 iterations. In each iteration, the measure of error decreases and converges closer and closer to 0.");
 			return model;
 		}
 
@@ -239,7 +230,7 @@ namespace DnfNewsletter.No4.WarGames.Console_
 
 
 		public static void MakePredictions(MLContext mlContext, ITransformer model)
-        {
+		{
 			var moviePredictions = new List<MoviePrediction>();
 			foreach (Movie movie in _movies)
 			{
@@ -255,17 +246,17 @@ namespace DnfNewsletter.No4.WarGames.Console_
 			WriteRecommendations(topMovieRecommendations);
 
 			var bottomMovieRecommendations = moviePredictions.OrderBy(mp => mp.Rating).Take(NumRecommendations);
-			Console.WriteLine($"\nBottom Recommendations:\n");
+			Console.WriteLine($"\nBottom Un-Recommendations:\n");
 			WriteRecommendations(bottomMovieRecommendations);
 		}
 
 		private static void WriteRecommendations(IEnumerable<MoviePrediction> movieRecommendations)
-        {
+		{
 			Console.WriteLine($"{"Title",-40}  {"Predicted rating",-20} {"Total Ratings",-20} {"Avg rating",-20}");
 
 
 			foreach (var movieRecommendation in movieRecommendations)
-				Console.WriteLine($"{movieRecommendation.Movie.Title,-40}  {movieRecommendation.Rating, -20:0.00} {movieRecommendation.Movie.RatingsCount, -20} {movieRecommendation.Movie.RatingsAvg,-20:0.00}");
+				Console.WriteLine($"{movieRecommendation.Movie.Title,-40}  {movieRecommendation.Rating,-20:0.00} {movieRecommendation.Movie.RatingsCount,-20} {movieRecommendation.Movie.RatingsAvg,-20:0.00}");
 		}
 
 		public static float MakePrediction(MLContext mlContext, ITransformer model, int userId, int movieId)
@@ -297,18 +288,6 @@ namespace DnfNewsletter.No4.WarGames.Console_
 			}
 		}
 
-		public static List<T> LoadListFromFileCsv<T>(string cvsFilePath)
-		{
-			using (var streamReader = new StreamReader(cvsFilePath))
-			{
-				using (var csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture))
-				{
-					csvReader.Configuration.HasHeaderRecord = false;
-					var records = csvReader.GetRecords<T>();
-					return new List<T>(records);
-				}
-			}
-		}
 
 		public static bool ValidateCurrentUserMovieRatings()
 		{
@@ -335,16 +314,6 @@ namespace DnfNewsletter.No4.WarGames.Console_
 
 	}
 
-
-	public class MovieRating
-	{
-		public int UserId { get; set; }
-
-		public int MovieId { get; set; }
-
-		public float Rating { get; set; }
-	}
-
 	public class Movie
 	{
 		public int Id { get; set; }
@@ -359,12 +328,23 @@ namespace DnfNewsletter.No4.WarGames.Console_
 	}
 
 
+	public class MovieRating
+	{
+		public int UserId { get; set; }
+
+		public int MovieId { get; set; }
+
+		public float Rating { get; set; }
+	}
+
+
 	public class MovieRatingPrediction
 	{
 		public float Label;
 
 		public float Score;
 	}
+
 
 	public class MoviePrediction
 	{

@@ -166,7 +166,7 @@ ORDER BY COUNT(*) DESC
 SELECT Max(UserID) From Rating
 -- NumRatings: 269539
 -- NumMovies: 500
--- NumUsers: 5500
+-- NumUsers: 5327
 
 
 SELECT *  FROM #TopMovie 
@@ -192,15 +192,18 @@ ON m.MovieId = Temp1.MovieId
 
 SELECT * FROM #TopMovie ORDER BY RatingsAvg DESC
 
-UPDATE #TopUser SET #TopUser.RatingsCount =  Temp1.RatingsCount
+UPDATE #TopUser SET #TopUser.RatingsCount =  Temp1.RatingsCount,  #TopUser.RatingsAvg =  Temp1.RatingsAvg
 FROM #TopUser u INNER JOIN
 (
 	SELECT UserId, COUNT(*) as RatingsCount, AVG(Rating) as RatingsAvg FROM #TopRating 
-	GROUP BY MovieId --5340
-	--ORDER BY COUNT(*) DESC
+	GROUP BY UserId 
 ) Temp1
+ON u.UserId = Temp1.UserId
 
-WHERE MovieId IN (SELECT MovieId FROM #TopMovie)
-Group BY UserId 
-HAVING COUNT(*) > 20
-ORDER BY COUNT(*) DESC
+SELECT * FROM #TopUser ORDER BY RatingsCount DESC
+
+--Get data into CSV
+SELECT * FROM #TopMovie ORDER BY RatingsCount DESC
+SELECT * FROM #TopRating ORDER BY Timestamp
+
+SELECT TOP 50 * FROM #TopMovie ORDER BY RatingsCount DESC
