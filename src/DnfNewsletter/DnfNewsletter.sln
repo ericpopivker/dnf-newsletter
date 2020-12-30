@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30128.74
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnfNewsletter.No4.WarGames.Console", "DnfNewsletter.No4.WarGames.Console\DnfNewsletter.No4.WarGames.Console.csproj", "{C4ED4E15-CB1B-4360-93F0-D9A68EB70B73}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DnfNewsletter.No4.WarGames.Console", "DnfNewsletter.No4.WarGames.Console\DnfNewsletter.No4.WarGames.Console.csproj", "{C4ED4E15-CB1B-4360-93F0-D9A68EB70B73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnfNewsletter.No6.KarateKid.Console", "DnfNewsletter.No6.KarateKid.Console\DnfNewsletter.No6.KarateKid.Console.csproj", "{47027035-1616-467D-92D3-66B913AE87FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{C4ED4E15-CB1B-4360-93F0-D9A68EB70B73}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4ED4E15-CB1B-4360-93F0-D9A68EB70B73}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4ED4E15-CB1B-4360-93F0-D9A68EB70B73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47027035-1616-467D-92D3-66B913AE87FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47027035-1616-467D-92D3-66B913AE87FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47027035-1616-467D-92D3-66B913AE87FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47027035-1616-467D-92D3-66B913AE87FC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
